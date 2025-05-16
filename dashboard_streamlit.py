@@ -1,168 +1,83 @@
-{
- "cells": [
-  {
-   "cell_type": "markdown",
-   "id": "9527bb99-cd18-4291-bf81-8d9214eddec1",
-   "metadata": {},
-   "source": [
-    "Dashboard Streamlit"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "2347c9c6-acd2-4890-83e2-b4230085d9a6",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import streamlit as st\n",
-    "import pandas as pd\n",
-    "import matplotlib.pyplot as plt\n",
-    "from PIL import Image\n",
-    "import os\n",
-    "import subprocess\n",
-    "\n",
-    "# Define caminho da pasta onde estão os outputs dos scripts\n",
-    "PASTA_OUTPUT = \"output\"\n",
-    "\n",
-    "st.set_page_config(page_title=\"Dashboard Instagram\", layout=\"wide\")\n",
-    "st.title(\"📈 Dashboard de Análise de Dados do Instagram\")\n",
-    "\n",
-    "# ================================\n",
-    "# BOTÃO PARA ATUALIZAR OS DADOS\n",
-    "# ================================\n",
-    "st.sidebar.title(\"⚙️ Atualização dos Dados\")\n",
-    "if st.sidebar.button(\"🔄 Atualizar dados\"):\n",
-    "    with st.spinner(\"Executando scripts de análise...\"):\n",
-    "        resultado = subprocess.run([\"python3\", \"../atualizador.py\"], capture_output=True, text=True)\n",
-    "        if resultado.returncode == 0:\n",
-    "            st.sidebar.success(\"✅ Dados atualizados com sucesso!\")\n",
-    "        else:\n",
-    "            st.sidebar.error(\"❌ Erro ao atualizar os dados.\")\n",
-    "            st.sidebar.text(resultado.stderr)\n",
-    "\n",
-    "# ================================\n",
-    "# 1. ANÁLISE DAS BIOS\n",
-    "# ================================\n",
-    "st.header(\"1. Análise das Bios\")\n",
-    "\n",
-    "# Top 10 contas mais seguidas\n",
-    "st.subheader(\"Top 10 contas mais seguidas\")\n",
-    "top10_path = os.path.join(PASTA_OUTPUT, \"top10_seguidores.csv\")\n",
-    "if os.path.exists(top10_path):\n",
-    "    top10_df = pd.read_csv(top10_path)\n",
-    "    st.dataframe(top10_df)\n",
-    "    img_path = os.path.join(PASTA_OUTPUT, \"top10_barplot.png\")\n",
-    "    if os.path.exists(img_path):\n",
-    "        st.image(img_path, caption=\"Top 10 contas mais seguidas\")\n",
-    "else:\n",
-    "    st.warning(\"Arquivo top10_seguidores.csv não encontrado.\")\n",
-    "\n",
-    "# Categorias de perfis\n",
-    "st.subheader(\"Distribuição por categorias\")\n",
-    "categorias_path = os.path.join(PASTA_OUTPUT, \"categorias.csv\")\n",
-    "if os.path.exists(categorias_path):\n",
-    "    cat_df = pd.read_csv(categorias_path)\n",
-    "    st.dataframe(cat_df)\n",
-    "    img_path = os.path.join(PASTA_OUTPUT, \"categorias_barplot.png\")\n",
-    "    if os.path.exists(img_path):\n",
-    "        st.image(img_path, caption=\"Contagem de contas por categoria\")\n",
-    "\n",
-    "# ================================\n",
-    "# 2. NUVENS DE PALAVRAS\n",
-    "# ================================\n",
-    "st.header(\"2. Nuvens de Palavras por País\")\n",
-    "paises = [f.replace(\"nuvem_\", \"\").replace(\".png\", \"\") for f in os.listdir(PASTA_OUTPUT) if f.startswith(\"nuvem_\")]\n",
-    "pais_selecionado = st.selectbox(\"Selecione o país:\", sorted(paises))\n",
-    "nuvem_path = os.path.join(PASTA_OUTPUT, f\"nuvem_{pais_selecionado}.png\")\n",
-    "if os.path.exists(nuvem_path):\n",
-    "    st.image(nuvem_path, caption=f\"Nuvem de palavras - {pais_selecionado.upper()}\")\n",
-    "\n",
-    "# ================================\n",
-    "# 3. ANÁLISE DE SENTIMENTOS\n",
-    "# ================================\n",
-    "st.header(\"3. Análise de Sentimentos por País\")\n",
-    "sentimentos_path = os.path.join(PASTA_OUTPUT, \"sentimentos.csv\")\n",
-    "if os.path.exists(sentimentos_path):\n",
-    "    sentimentos_df = pd.read_csv(sentimentos_path)\n",
-    "    st.dataframe(sentimentos_df)\n",
-    "    st.bar_chart(sentimentos_df.set_index(\"pais\"))\n",
-    "\n",
-    "# ================================\n",
-    "# 4. TOP POSTS\n",
-    "# ================================\n",
-    "st.header(\"4. Top Posts\")\n",
-    "\n",
-    "# Top 10 geral\n",
-    "st.subheader(\"Top 10 posts com mais curtidas (geral)\")\n",
-    "top10_posts_path = os.path.join(PASTA_OUTPUT, \"top10_posts.csv\")\n",
-    "if os.path.exists(top10_posts_path):\n",
-    "    top10_posts_df = pd.read_csv(top10_posts_path)\n",
-    "    st.dataframe(top10_posts_df)\n",
-    "\n",
-    "# Top 5 por país\n",
-    "st.subheader(\"Top 5 posts por país\")\n",
-    "posts_por_pais = [f.replace(\"top5_posts_\", \"\").replace(\".csv\", \"\") for f in os.listdir(PASTA_OUTPUT) if f.startswith(\"top5_posts_\")]\n",
-    "pais_post = st.selectbox(\"Selecione o país para ver os top 5 posts:\", sorted(posts_por_pais))\n",
-    "top5_path = os.path.join(PASTA_OUTPUT, f\"top5_posts_{pais_post}.csv\")\n",
-    "if os.path.exists(top5_path):\n",
-    "    st.dataframe(pd.read_csv(top5_path))\n",
-    "\n",
-    "# ================================\n",
-    "# 5. BIGRAMAS E TRIGRAMAS\n",
-    "# ================================\n",
-    "st.header(\"5. Bigramas e Trigramas\")\n",
-    "bt_path = os.path.join(PASTA_OUTPUT, \"bigramas_trigramas\")\n",
-    "bt_paises = [f.replace(\"bigrams_\", \"\").replace(\".png\", \"\") for f in os.listdir(bt_path) if f.startswith(\"bigrams_\")]\n",
-    "pais_bt = st.selectbox(\"Selecione o país:\", sorted(bt_paises))\n",
-    "\n",
-    "bigram_img = os.path.join(bt_path, f\"bigrams_{pais_bt}.png\")\n",
-    "trigram_img = os.path.join(bt_path, f\"trigrams_{pais_bt}.png\")\n",
-    "\n",
-    "if os.path.exists(bigram_img):\n",
-    "    st.image(bigram_img, caption=f\"Bigramas - {pais_bt.upper()}\")\n",
-    "if os.path.exists(trigram_img):\n",
-    "    st.image(trigram_img, caption=f\"Trigramas - {pais_bt.upper()}\")\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 1,
-   "id": "566307d3-c899-473a-975d-d2926686a1a3",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "!pip freeze > requirements.txt\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "d808c0d9-12de-487c-85b1-e4dc5296b2b2",
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python [conda env:base] *",
-   "language": "python",
-   "name": "conda-base-py"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.12.7"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+from PIL import Image
+import os
+
+# Caminho para a pasta de saída dos dados
+PASTA_OUTPUT = "output"
+PASTA_NUVENS = os.path.join(PASTA_OUTPUT, "nuvens")
+
+st.set_page_config(page_title="Dashboard Instagram", layout="wide")
+st.title("📊 Dashboard de Análise do Instagram")
+
+# =========================================
+# 1. ANÁLISE DAS BIOS
+# =========================================
+st.header("1. Análise das Bios")
+
+# Top 10 contas mais seguidas
+st.subheader("Top 10 contas mais seguidas")
+top10_path = os.path.join(PASTA_OUTPUT, "top10_seguidores.csv")
+top10_img = os.path.join(PASTA_OUTPUT, "top10_barplot.png")
+if os.path.exists(top10_path):
+    df_top10 = pd.read_csv(top10_path)
+    st.dataframe(df_top10)
+    if os.path.exists(top10_img):
+        st.image(top10_img, caption="Top 10 contas mais seguidas")
+else:
+    st.warning("Arquivo top10_seguidores.csv não encontrado.")
+
+# Distribuição por categoria
+st.subheader("Distribuição por categorias")
+categorias_path = os.path.join(PASTA_OUTPUT, "categorias.csv")
+categorias_img = os.path.join(PASTA_OUTPUT, "categorias_barplot.png")
+if os.path.exists(categorias_path):
+    df_cat = pd.read_csv(categorias_path)
+    st.dataframe(df_cat)
+    if os.path.exists(categorias_img):
+        st.image(categorias_img, caption="Distribuição por categorias")
+
+# =========================================
+# 2. ANÁLISE DE SENTIMENTOS
+# =========================================
+st.header("2. Análise de Sentimentos por País")
+sent_path = os.path.join(PASTA_OUTPUT, "sentimentos.csv")
+if os.path.exists(sent_path):
+    df_sent = pd.read_csv(sent_path)
+    st.dataframe(df_sent)
+    st.bar_chart(df_sent.set_index("país")[["média_sentimento (1-5 estrelas)"]])
+else:
+    st.warning("Arquivo sentimentos.csv não encontrado.")
+
+# =========================================
+# 3. TOP POSTS E USUÁRIOS GERAL
+# =========================================
+st.header("3. Top Posts e Usuários - Geral")
+
+# Top 10 posts geral
+st.subheader("Top 10 posts com mais curtidas")
+top_posts_path = os.path.join(PASTA_OUTPUT, "top10_posts.csv")
+if os.path.exists(top_posts_path):
+    st.dataframe(pd.read_csv(top_posts_path))
+
+# Top 10 usuários geral
+st.subheader("Top 10 usuários com maior soma de curtidas")
+top_users_path = os.path.join(PASTA_OUTPUT, "top10_usuarios.csv")
+if os.path.exists(top_users_path):
+    st.dataframe(pd.read_csv(top_users_path))
+
+# =========================================
+# 4. NUVENS DE PALAVRAS POR PAÍS
+# =========================================
+st.header("4. Nuvens de Palavras por País")
+if os.path.exists(PASTA_NUVENS):
+    paises = sorted([f.replace("nuvem_", "").replace(".png", "") for f in os.listdir(PASTA_NUVENS) if f.endswith(".png")])
+    pais_sel = st.selectbox("Selecione o país:", paises)
+    caminho_img = os.path.join(PASTA_NUVENS, f"nuvem_{pais_sel}.png")
+    if os.path.exists(caminho_img):
+        st.image(caminho_img, caption=f"Nuvem de palavras - {pais_sel}")
+    else:
+        st.warning("Imagem da nuvem não encontrada.")
+else:
+    st.warning("Pasta de nuvens de palavras não encontrada.")
